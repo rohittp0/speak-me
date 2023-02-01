@@ -42,7 +42,7 @@ def main():
     model_config = GPT.get_default_config()
     trainer_config = Trainer.get_default_config()
 
-    model_config.model_type = 'gpt2'
+    model_config.model_type = 'gpt2-medium'
     model_config.vocab_size = 94268  # OpenAI's model vocabulary
     model_config.block_size = 1024  # OpenAI's model block_size (i.e. input context length)
     model = GPT(model_config)
