@@ -10,6 +10,7 @@ import torch
 from torch.utils.data.dataloader import DataLoader
 from mingpt.utils import CfgNode as CN
 
+
 class Trainer:
 
     @staticmethod
@@ -24,11 +25,12 @@ class Trainer:
         C.batch_size = 64
         C.learning_rate = 3e-4
         C.betas = (0.9, 0.95)
-        C.weight_decay = 0.1 # only applied on matmul weights
+        C.weight_decay = 0.1  # only applied on matmul weights
         C.grad_norm_clip = 1.0
         return C
 
     def __init__(self, config, model, train_dataset):
+        self.loss = None
         self.config = config
         self.model = model
         self.optimizer = None
