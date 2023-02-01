@@ -14,14 +14,15 @@ class UnicodeData(Dataset):
                 parts = re.split(r'([`\-=~!@#$%^&*()_+\[\]{};\'\\:"|<,./<>?\s])', f.read())
                 self.data.update(parts)
 
-        self.data = sorted(list(self.data))
+        self.data = list(self.data)
+        self.tokens = sorted(self.data)
         self.block_size = block_size
 
-        self.vocab_size = len(self.data)
+        self.vocab_size = len(self.tokens)
         print(f"Vocab size: {self.vocab_size}, block size: {self.block_size}")
 
-        self.encode = {ch: i for i, ch in enumerate(self.data)}
-        self.decode = {i: ch for i, ch in enumerate(self.data)}
+        self.encode = {ch: i for i, ch in enumerate(self.tokens)}
+        self.decode = {i: ch for i, ch in enumerate(self.tokens)}
 
     def get_vocab_size(self):
         return self.vocab_size
