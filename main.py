@@ -42,12 +42,12 @@ def main():
     model_config = GPT.get_default_config()
     trainer_config = Trainer.get_default_config()
 
-    model_config.model_type = 'gpt2-medium'
-    model_config.vocab_size = 94268  # OpenAI's model vocabulary
+    manglish = UnicodeData("data", model_config.block_size)
+
+    model_config.model_type = 'gpt2-xl'
+    model_config.vocab_size = manglish.get_vocab_size()
     model_config.block_size = 1024  # OpenAI's model block_size (i.e. input context length)
     model = GPT(model_config)
-
-    manglish = UnicodeData("data", model_config.block_size)
 
     trainer_config.batch_size = 1
     trainer_config.max_iters = 100_000
