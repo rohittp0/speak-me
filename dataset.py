@@ -1,5 +1,4 @@
 import os
-import re
 from pathlib import Path
 
 import torch
@@ -13,9 +12,7 @@ class UnicodeData(Dataset):
         for cpath, folders, files in os.walk(data_dir):
             for file in files:
                 txt = Path(cpath, file).read_text(encoding="utf-8")
-                parts = re.split(r'([`\-=~!@#$%^&*()_+\[\]{};\'\\:"|<,./>?\s\n\t])', txt)
-
-                self.data.extend(parts)
+                self.data.extend(list(txt))
 
         self.data = self.data
         self.tokens = sorted(list(set(self.data)))
@@ -51,3 +48,7 @@ class UnicodeData(Dataset):
         x = torch.tensor(dix[:-1], dtype=torch.long)
         y = torch.tensor(dix[1:], dtype=torch.long)
         return x, y
+
+
+if __name__ == "__main__":
+    UnicodeData("data", 1024)
