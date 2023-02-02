@@ -1,28 +1,57 @@
 import os
+import pickle
 from pathlib import Path
+from typing import Generator
 
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 
 
 class UnicodeData(Dataset):
     def __init__(self, data_dir, block_size=128):
-        self.data = []
+        self.data = self.get_tokens(data_dir)
+        self.encode, self.decode = self.get_encodings()
 
-        for cpath, folders, files in os.walk(data_dir):
-            for file in files:
-                txt = Path(cpath, file).read_text(encoding="utf-8")
-                self.data.extend(list(txt))
-
-        self.data = self.data
-        self.tokens = sorted(list(set(self.data)))
+        self.vocab_size = self.decode.shape[0]
         self.block_size = block_size
 
-        self.vocab_size, self.data_size = len(self.tokens), len(self.data)
-        print(f"Vocab size: {self.vocab_size}, data size: {self.data_size}")
+        print(f"Vocab size: {self.vocab_size}")
 
-        self.encode = {ch: i for i, ch in enumerate(self.tokens)}
-        self.decode = {i: ch for i, ch in enumerate(self.tokens)}
+    @staticmethod
+    def get_file_list(data_dir) -> Generator[Path, None, None]:
+        for cpath, folders, files in os.walk(data_dir):
+            for file in files:
+                yield Path(cpath, file)
+
+    def get_tokens(self, data_dir) -> np.ndarray:
+        if os.path.exists("tokens.npy"):
+            return np.load("tokens.npy", mmap_mode="r", encoding="bytes")
+
+        file_list = self.get_file_list(data_dir)
+        tokens = []
+
+        for file in file_list:
+            tokens += list(file.read_text(encoding="utf-8"))
+
+        tokens = np.array(tokens)
+        np.save("tokens.npy", tokens)
+
+        return tokens
+
+    def get_encodings(self):
+        if os.path.exists("encode.pkl") and os.path.exists("decode.npy"):
+            return (pickle.load(open("encode.pkl", "rb")),
+                    np.load("decode.npy", mmap_mode="r", encoding="bytes"))
+
+        tokens = np.unique(self.data)
+        encode = {ch: i for i, ch in enumerate(tokens)}
+        decode = tokens
+
+        pickle.dump(encode, open("encode.pkl", "wb"))
+        np.save("decode.npy", decode)
+
+        return encode, decode
 
     def get_vocab_size(self):
         return self.vocab_size
@@ -37,7 +66,7 @@ class UnicodeData(Dataset):
         return "".join([self.decode[s] for s in sequence])
 
     def __len__(self):
-        return self.data_size - self.block_size
+        return self.data.shape[0] - self.block_size
 
     def __getitem__(self, idx):
         # grab a chunk of (block_size + 1) tokens from the data
