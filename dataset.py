@@ -1,5 +1,5 @@
-import os
 import re
+from pathlib import Path
 
 import torch
 from torch.utils.data import Dataset
@@ -9,10 +9,13 @@ class UnicodeData(Dataset):
     def __init__(self, data_dir, block_size=128):
         self.data = []
 
-        for file in os.listdir(data_dir):
-            with open(os.path.join(data_dir, file), "r", encoding="utf-8") as f:
-                parts = re.split(r'([`\-=~!@#$%^&*()_+\[\]{};\'\\:"|<,./<>?\s])', f.read())
-                self.data.extend(parts)
+        for child in Path(data_dir).iterdir():
+            if not child.is_file():
+                continue
+
+            txt = child.read_text(encoding="utf-8")
+            parts = re.split(r'([`\-=~!@#$%^&*()_+\[\]{};\'\\:"|<,./>?\s\n\t])', txt)
+            self.data.extend(parts)
 
         self.data = self.data
         self.tokens = sorted(list(set(self.data)))
