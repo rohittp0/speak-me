@@ -1,3 +1,4 @@
+import os
 import re
 from pathlib import Path
 
@@ -9,20 +10,19 @@ class UnicodeData(Dataset):
     def __init__(self, data_dir, block_size=128):
         self.data = []
 
-        for child in Path(data_dir).iterdir():
-            if not child.is_file():
-                continue
+        for cpath, folders, files in os.walk(data_dir):
+            for file in files:
+                txt = Path(cpath, file).read_text(encoding="utf-8")
+                parts = re.split(r'([`\-=~!@#$%^&*()_+\[\]{};\'\\:"|<,./>?\s\n\t])', txt)
 
-            txt = child.read_text(encoding="utf-8")
-            parts = re.split(r'([`\-=~!@#$%^&*()_+\[\]{};\'\\:"|<,./>?\s\n\t])', txt)
-            self.data.extend(parts)
+                self.data.extend(parts)
 
         self.data = self.data
         self.tokens = sorted(list(set(self.data)))
         self.block_size = block_size
 
-        self.vocab_size = len(self.tokens)
-        print(f"Vocab size: {self.vocab_size}, block size: {self.block_size}")
+        self.vocab_size, self.data_size = len(self.tokens), len(self.data)
+        print(f"Vocab size: {self.vocab_size}, data size: {self.data_size}")
 
         self.encode = {ch: i for i, ch in enumerate(self.tokens)}
         self.decode = {i: ch for i, ch in enumerate(self.tokens)}
@@ -40,7 +40,7 @@ class UnicodeData(Dataset):
         return "".join([self.decode[s] for s in sequence])
 
     def __len__(self):
-        return len(self.data) - self.block_size
+        return self.data_size - self.block_size
 
     def __getitem__(self, idx):
         # grab a chunk of (block_size + 1) tokens from the data
