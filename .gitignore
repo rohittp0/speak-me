@@ -5,3 +5,6 @@ __pycache__/
 .pylintrc
 .idea/
 data
+*.npy
+*.pkl
+*.pt

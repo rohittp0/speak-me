@@ -27,9 +27,14 @@ class Trainer:
         C.betas = (0.9, 0.95)
         C.weight_decay = 0.1  # only applied on matmul weights
         C.grad_norm_clip = 1.0
+        # scheduler parameters
+        C.lr_decay_steps = 500
+        C.lr_decay_gamma = 0.5
+
         return C
 
     def __init__(self, config, model, train_dataset):
+        self.scheduler = None
         self.loss = None
         self.config = config
         self.model = model
@@ -60,13 +65,34 @@ class Trainer:
         for callback in self.callbacks.get(onevent, []):
             callback(self)
 
+    def save_checkpoint(self, ckpt_path):
+        torch.save({
+            'epoch': self.iter_num,
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'scheduler_state_dict': self.scheduler.state_dict(),
+            'loss': self.loss,
+        }, ckpt_path)
+
+    def load_checkpoint(self, ckpt_path):
+        checkpoint = torch.load(ckpt_path)
+
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+
+        self.iter_num = checkpoint['epoch']
+        self.loss = checkpoint['loss']
+
+        print("loaded checkpoint from", ckpt_path)
+
     def run(self):
         model, config = self.model, self.config
 
-        # setup the optimizer
-        self.optimizer = model.configure_optimizers(config)
+        # set up the optimizer
+        self.optimizer, self.scheduler = model.configure_optimizers(config)
 
-        # setup the dataloader
+        # set up the dataloader
         train_loader = DataLoader(
             self.train_dataset,
             sampler=torch.utils.data.RandomSampler(self.train_dataset, replacement=True, num_samples=int(1e10)),
@@ -99,6 +125,7 @@ class Trainer:
             self.loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_norm_clip)
             self.optimizer.step()
+            self.scheduler.step()
 
             self.trigger_callbacks('on_batch_end')
             self.iter_num += 1
