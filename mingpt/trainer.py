@@ -33,14 +33,14 @@ class Trainer:
 
         return C
 
-    def __init__(self, config, model, train_dataset):
-        self.scheduler = None
+    def __init__(self, config, model, train_dataset, test_dataset):
         self.loss = None
         self.config = config
         self.model = model
-        self.optimizer = None
         self.train_dataset = train_dataset
         self.callbacks = defaultdict(list)
+
+        self.optimizer, self.scheduler = model.configure_optimizers(config)
 
         # determine the device we'll train on
         if config.device == 'auto':
@@ -49,6 +49,14 @@ class Trainer:
             self.device = config.device
         self.model = self.model.to(self.device)
         print("running on device", self.device)
+
+        # create dataloaders
+        self.test_loader = DataLoader(test_dataset,
+                                      batch_size=config.batch_size,
+                                      shuffle=False,
+                                      pin_memory=True,
+                                      num_workers=config.num_workers)
+        self.test_iter = iter(self.test_loader)
 
         # variables that will be assigned to trainer class later for logging and etc
         self.iter_num = 0
@@ -86,11 +94,27 @@ class Trainer:
 
         print("loaded checkpoint from", ckpt_path)
 
+    def test(self, iterations=10):
+        self.model.eval()
+        total_loss = 0
+
+        with torch.no_grad():
+            for i in range(iterations):
+                try:
+                    batch = next(self.test_iter)
+                except StopIteration:
+                    self.test_iter = iter(self.test_loader)
+                    batch = next(self.test_iter)
+
+                batch = [t.to(self.device) for t in batch]
+                x, y = batch
+                _, loss = self.model(x, y)
+                total_loss += loss.item()
+
+        return total_loss / iterations
+
     def run(self):
         model, config = self.model, self.config
-
-        # set up the optimizer
-        self.optimizer, self.scheduler = model.configure_optimizers(config)
 
         # set up the dataloader
         train_loader = DataLoader(

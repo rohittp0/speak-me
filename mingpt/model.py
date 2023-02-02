@@ -269,7 +269,7 @@ class GPT(nn.Module):
             {"params": [param_dict[pn] for pn in sorted(list(no_decay))], "weight_decay": 0.0},
         ]
         optimizer = torch.optim.AdamW(optim_groups, lr=train_config.learning_rate, betas=train_config.betas)
-        scheduler = StepLR(optimizer, step_size=train_config.lr_decay_step, gamma=train_config.lr_decay_gamma)
+        scheduler = StepLR(optimizer, step_size=train_config.lr_decay_steps, gamma=train_config.lr_decay_gamma)
 
         return optimizer, scheduler
 
