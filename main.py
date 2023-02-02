@@ -30,6 +30,7 @@ def get_batch_end_callback(model: GPT, train_dataset: UnicodeData):
                 print(f"{completion = }")
             # save the latest model
             print("saving model")
+
             ckpt_path = os.path.join("models", "model.pt")
             torch.save(model.state_dict(), ckpt_path)
             # revert model to training mode
@@ -44,7 +45,7 @@ def main():
 
     manglish = UnicodeData("data", model_config.block_size)
 
-    model_config.model_type = 'gpt2-xl'
+    model_config.model_type = 'gpt2'
     model_config.vocab_size = manglish.get_vocab_size()
     model_config.block_size = 1024  # OpenAI's model block_size (i.e. input context length)
     model = GPT(model_config)
