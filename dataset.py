@@ -40,16 +40,16 @@ class UnicodeData(Dataset):
         return tokens
 
     def get_encodings(self):
-        if os.path.exists("encode.pkl") and os.path.exists("decode.npy"):
-            return (pickle.load(open("encode.pkl", "rb")),
-                    np.load("decode.npy", mmap_mode="r", encoding="bytes"))
+        if os.path.exists("historic/encode.pkl") and os.path.exists("historic/decode.npy"):
+            return (pickle.load(open("historic/encode.pkl", "rb")),
+                    np.load("historic/decode.npy", mmap_mode="r", encoding="bytes"))
 
         tokens = np.unique(self.data)
         encode = {ch: i for i, ch in enumerate(tokens)}
         decode = tokens
 
-        pickle.dump(encode, open("encode.pkl", "wb"))
-        np.save("decode.npy", decode)
+        pickle.dump(encode, open("historic/encode.pkl", "wb"))
+        np.save("historic/decode.npy", decode)
 
         return encode, decode
 

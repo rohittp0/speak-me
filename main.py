@@ -10,9 +10,24 @@ from mingpt.trainer import Trainer
 model_save_folder = "models"
 
 
+def generate(train_dataset, model, prompt):
+    with torch.no_grad():
+        # sample from the model...
+        context = train_dataset.encode_sequence(prompt)
+        x = torch.tensor(context, dtype=torch.long)[None, ...].to("cuda")
+        y = model.generate(x, 500, temperature=1.0, do_sample=True, top_k=10)[0]
+
+        completion = train_dataset.decode_sequence(y.tolist())
+        print("Completion: ")
+        print(completion)
+
+
 def get_batch_end_callback(model: GPT, train_dataset: UnicodeData):
     # iteration callback
     def batch_end_callback(trainer: Trainer):
+
+        if trainer.iter_num == 0:
+            return
 
         if trainer.iter_num % 10 == 0:
             print(
@@ -28,15 +43,7 @@ def get_batch_end_callback(model: GPT, train_dataset: UnicodeData):
 
         if trainer.iter_num % 500 == 0:
             # evaluate both the train and test score
-            with torch.no_grad():
-                # sample from the model...
-                context = train_dataset.encode_sequence("അതിവേഗം ")
-                x = torch.tensor(context, dtype=torch.long)[None, ...].to(trainer.device)
-                y = model.generate(x, 500, temperature=1.0, do_sample=True, top_k=10)[0]
-
-                completion = train_dataset.decode_sequence(y.tolist())
-                print("Completion: ")
-                print(completion)
+            generate(train_dataset, model, "അതിവേഗം")
             # save the latest model
             print("saving model")
 
@@ -63,7 +70,7 @@ def main():
 
     model_config.model_type = 'gpt-mini'
     model_config.vocab_size = manglish.get_vocab_size()
-    model_config.block_size = manglish.block_size  # OpenAI's model block_size (i.e. input context length)
+    model_config.block_size = manglish.block_size
     model = GPT(model_config)
 
     trainer_config.batch_size = 4
